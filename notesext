@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .calendar-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            width: 90%;
+            max-width: 450px;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            background: #f0f0f0;
+            padding: 5px;
+            border-radius: 10px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+        }
+
+        .mode-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        #month-year {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .today-button {
+            background: #764ba2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .today-button:hover {
+            background: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .nav-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s;
+        }
+
+        .nav-button:hover {
+            background: #764ba2;
+            transform: scale(1.1);
+        }
+
+        .weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .weekday {
+            text-align: center;
+            font-weight: 600;
+            color: #667eea;
+            padding: 10px 0;
+            font-size: 14px;
+        }
+
+        #days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+        }
+
+        #days div {
+            aspect-ratio: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        #days div:hover {
+            background: #f0f0f0;
+        }
+
+        #days div.fade {
+            color: #ccc;
+        }
+
+        #days div.today {
+            background: #667eea;
+            color: white;
+            font-weight: 700;
+        }
+
+        #days div.today:hover {
+            background: #764ba2;
+        }
+
+        .year-grid, .decade-grid, .century-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .month-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .grid-item {
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+            border: 2px solid transparent;
+        }
+
+        .grid-item:hover {
+            background: #f0f0f0;
+            transform: translateY(-2px);
+        }
+
+        .grid-item.current {
+            background: #667eea;
+            color: white;
+            font-weight: 700;
+        }
+
+        .grid-item.current:hover {
+            background: #764ba2;
+        }
+
+        #content {
+            min-height: 300px;
+        }
+    </style>
+</head>
+<body>
+    <div class="calendar-container">
+        <div class="mode-selector">
+            <button class="mode-btn active" data-mode="day">Day</button>
+            <button class="mode-btn" data-mode="month">Month</button>
+            <button class="mode-btn" data-mode="year">Year</button>
+            <button class="mode-btn" data-mode="decade">Decade</button>
+            <button class="mode-btn" data-mode="century">Century</button>
+        </div>
+
+        <div class="header">
+            <button class="nav-button" id="prevButton">❮</button>
+            <h2 id="month-year"></h2>
+            <button class="nav-button" id="nextButton">❯</button>
+        </div>
+        
+        <button class="today-button" id="todayButton">Today</button>
+        
+        <div id="content"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const monthYear = document.getElementById('month-year');
+            const contentContainer = document.getElementById('content');
+            const prevButton = document.getElementById('prevButton');
+            const nextButton = document.getElementById('nextButton');
+            const todayButton = document.getElementById('todayButton');
+            const modeButtons = document.querySelectorAll('.mode-btn');
+
+            const months = [
+                'January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'
+            ];
+            
+            let currentDate = new Date();
+            let today = new Date();
+            let currentMode = 'day';
+
+            function setActiveMode(mode) {
+                modeButtons.forEach(btn => {
+                    if (btn.dataset.mode === mode) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+                currentMode = mode;
+            }
+
+            function renderDayView(date) {
+                const year = date.getFullYear();
+                const month = date.getMonth();
+                const firstDayOfWeek = new Date(year, month, 1).getDay();
+                const lastDateOfMonth = new Date(year, month + 1, 0).getDate();
+
+                monthYear.textContent = `${months[month]} ${year}`;
+                
+                contentContainer.innerHTML = `
+                    <div class="weekdays">
+                        <div class="weekday">Sun</div>
+                        <div class="weekday">Mon</div>
+                        <div class="weekday">Tue</div>
+                        <div class="weekday">Wed</div>
+                        <div class="weekday">Thu</div>
+                        <div class="weekday">Fri</div>
+                        <div class="weekday">Sat</div>
+                    </div>
+                    <div id="days"></div>
+                `;
+
+                const daysContainer = document.getElementById('days');
+
+                const prevMonthLastDay = new Date(year, month, 0).getDate();
+                for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+                    const dayDiv = document.createElement('div');
+                    dayDiv.textContent = prevMonthLastDay - i;
+                    dayDiv.classList.add('fade');
+                    daysContainer.appendChild(dayDiv);
+                }
+
+                for (let i = 1; i <= lastDateOfMonth; i++) {
+                    const dayDiv = document.createElement('div');
+                    dayDiv.textContent = i;
+                    if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+                        dayDiv.classList.add('today');
+                    }
+                    daysContainer.appendChild(dayDiv);
+                }
+
+                const totalCells = firstDayOfWeek + lastDateOfMonth;
+                const remainingCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+                for (let i = 1; i <= remainingCells; i++) {
+                    const dayDiv = document.createElement('div');
+                    dayDiv.textContent = i;
+                    dayDiv.classList.add('fade');
+                    daysContainer.appendChild(dayDiv);
+                }
+            }
+
+            function renderMonthView(date) {
+                const year = date.getFullYear();
+                monthYear.textContent = year;
+
+                contentContainer.innerHTML = '<div class="month-grid"></div>';
+                const grid = contentContainer.querySelector('.month-grid');
+
+                months.forEach((month, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'grid-item';
+                    item.textContent = month.substring(0, 3);
+                    
+                    if (index === today.getMonth() && year === today.getFullYear()) {
+                        item.classList.add('current');
+                    }
+
+                    item.addEventListener('click', () => {
+                        currentDate = new Date(year, index, 1);
+                        setActiveMode('day');
+                        renderView();
+                    });
+
+                    grid.appendChild(item);
+                });
+            }
+
+            function renderYearView(date) {
+                const year = date.getFullYear();
+                const decade = Math.floor(year / 10) * 10;
+                monthYear.textContent = `${decade} - ${decade + 9}`;
+
+                contentContainer.innerHTML = '<div class="year-grid"></div>';
+                const grid = contentContainer.querySelector('.year-grid');
+
+                for (let i = decade; i < decade + 10; i++) {
+                    const item = document.createElement('div');
+                    item.className = 'grid-item';
+                    item.textContent = i;
+                    
+                    if (i === today.getFullYear()) {
+                        item.classList.add('current');
+                    }
+
+                    item.addEventListener('click', () => {
+                        currentDate = new Date(i, 0, 1);
+                        setActiveMode('month');
+                        renderView();
+                    });
+
+                    grid.appendChild(item);
+                }
+            }
+
+            function renderDecadeView(date) {
+                const year = date.getFullYear();
+                const century = Math.floor(year / 100) * 100;
+                monthYear.textContent = `${century}s`;
+
+                contentContainer.innerHTML = '<div class="decade-grid"></div>';
+                const grid = contentContainer.querySelector('.decade-grid');
+
+                for (let i = 0; i < 10; i++) {
+                    const decadeStart = century + (i * 10);
+                    const item = document.createElement('div');
+                    item.className = 'grid-item';
+                    item.textContent = `${decadeStart}s`;
+                    
+                    const currentDecade = Math.floor(today.getFullYear() / 10) * 10;
+                    if (decadeStart === currentDecade) {
+                        item.classList.add('current');
+                    }
+
+                    item.addEventListener('click', () => {
+                        currentDate = new Date(decadeStart, 0, 1);
+                        setActiveMode('year');
+                        renderView();
+                    });
+
+                    grid.appendChild(item);
+                }
+            }
+
+            function renderCenturyView(date) {
+                const year = date.getFullYear();
+                const millennium = Math.floor(year / 1000) * 1000;
+                monthYear.textContent = `${millennium} - ${millennium + 999}`;
+
+                contentContainer.innerHTML = '<div class="century-grid"></div>';
+                const grid = contentContainer.querySelector('.century-grid');
+
+                for (let i = 0; i < 10; i++) {
+                    const centuryStart = millennium + (i * 100);
+                    const item = document.createElement('div');
+                    item.className = 'grid-item';
+                    item.textContent = `${centuryStart}s`;
+                    
+                    const currentCentury = Math.floor(today.getFullYear() / 100) * 100;
+                    if (centuryStart === currentCentury) {
+                        item.classList.add('current');
+                    }
+
+                    item.addEventListener('click', () => {
+                        currentDate = new Date(centuryStart, 0, 1);
+                        setActiveMode('decade');
+                        renderView();
+                    });
+
+                    grid.appendChild(item);
+                }
+            }
+
+            function renderView() {
+                switch(currentMode) {
+                    case 'day':
+                        renderDayView(currentDate);
+                        break;
+                    case 'month':
+                        renderMonthView(currentDate);
+                        break;
+                    case 'year':
+                        renderYearView(currentDate);
+                        break;
+                    case 'decade':
+                        renderDecadeView(currentDate);
+                        break;
+                    case 'century':
+                        renderCenturyView(currentDate);
+                        break;
+                }
+            }
+
+            function navigatePrev() {
+                switch(currentMode) {
+                    case 'day':
+                        currentDate.setMonth(currentDate.getMonth() - 1);
+                        break;
+                    case 'month':
+                        currentDate.setFullYear(currentDate.getFullYear() - 1);
+                        break;
+                    case 'year':
+                        currentDate.setFullYear(currentDate.getFullYear() - 10);
+                        break;
+                    case 'decade':
+                        currentDate.setFullYear(currentDate.getFullYear() - 100);
+                        break;
+                    case 'century':
+                        currentDate.setFullYear(currentDate.getFullYear() - 1000);
+                        break;
+                }
+                renderView();
+            }
+
+            function navigateNext() {
+                switch(currentMode) {
+                    case 'day':
+                        currentDate.setMonth(currentDate.getMonth() + 1);
+                        break;
+                    case 'month':
+                        currentDate.setFullYear(currentDate.getFullYear() + 1);
+                        break;
+                    case 'year':
+                        currentDate.setFullYear(currentDate.getFullYear() + 10);
+                        break;
+                    case 'decade':
+                        currentDate.setFullYear(currentDate.getFullYear() + 100);
+                        break;
+                    case 'century':
+                        currentDate.setFullYear(currentDate.getFullYear() + 1000);
+                        break;
+                }
+                renderView();
+            }
+
+            prevButton.addEventListener('click', navigatePrev);
+            nextButton.addEventListener('click', navigateNext);
+
+            todayButton.addEventListener('click', function() {
+                currentDate = new Date();
+                setActiveMode('day');
+                renderView();
+            });
+
+            modeButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    setActiveMode(btn.dataset.mode);
+                    renderView();
+                });
+            });
+
+            renderView();
+        });
+    </script>
+</body>
+</html>
